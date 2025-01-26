@@ -1,78 +1,97 @@
+import toast from 'react-hot-toast';
 import { useState, useCallback } from 'react';
+import { doc, deleteDoc } from 'firebase/firestore';
 
 import Box from '@mui/material/Box';
-import Avatar from '@mui/material/Avatar';
 import Popover from '@mui/material/Popover';
 import TableRow from '@mui/material/TableRow';
-import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
-import { Label } from 'src/components/label';
+import { db } from 'src/firebase/firebase';
+
 import { Iconify } from 'src/components/iconify';
+
+import EditStudentModal from './student-edit-modal';
 
 // ----------------------------------------------------------------------
 
 export type UserProps = {
   id: string;
   name: string;
-  role: string;
-  status: string;
-  company: string;
-  avatarUrl: string;
-  isVerified: boolean;
+  class: string;
+  section: string;
+  rollNumber: string;
 };
 
 type UserTableRowProps = {
   row: UserProps;
-  selected: boolean;
-  onSelectRow: () => void;
+  fetchStudents: () => void;
 };
 
-export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) {
+export function UserTableRow({ row, fetchStudents }: UserTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setOpenPopover(event.currentTarget);
+  }, []);
+
+  const handleOpenEditModal = useCallback(() => {
+    setOpenPopover(null);
+    setIsEditModalOpen(true);
   }, []);
 
   const handleClosePopover = useCallback(() => {
     setOpenPopover(null);
   }, []);
 
+
+  const deleteStudent = async (studentId: string) => {
+    setOpenPopover(null);
+
+    toast.promise(
+      deleteDoc(doc(db, 'students', studentId))
+        .then(() => {
+          fetchStudents();
+          console.log('Student successfully deleted!');
+        }),
+      {
+        loading: 'Deleting...',
+        success: <b>Student deleted successfully!</b>,
+        error: <b>Could not delete student.</b>,
+      }
+    );
+  };
+
+
   return (
     <>
-      <TableRow hover tabIndex={-1} role="checkbox" selected={selected}>
-        <TableCell padding="checkbox">
-          <Checkbox disableRipple checked={selected} onChange={onSelectRow} />
-        </TableCell>
+      <TableRow hover tabIndex={-1}>
+        <EditStudentModal
+          open={isEditModalOpen}
+          handleClose={() => setIsEditModalOpen(false)}
+          studentId={row.id}
+          row={row}
+          fetchStudents={fetchStudents}
+        />
 
         <TableCell component="th" scope="row">
           <Box gap={2} display="flex" alignItems="center">
-            <Avatar alt={row.name} src={row.avatarUrl} />
+            {row.id}
+          </Box>
+        </TableCell>
+        <TableCell component="th" scope="row">
+          <Box gap={2} display="flex" alignItems="center">
             {row.name}
           </Box>
         </TableCell>
-
-        <TableCell>{row.company}</TableCell>
-
-        <TableCell>{row.role}</TableCell>
-
-        <TableCell align="center">
-          {row.isVerified ? (
-            <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
-          ) : (
-            '-'
-          )}
-        </TableCell>
-
-        <TableCell>
-          <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status}</Label>
-        </TableCell>
-
-        <TableCell align="right">
+        <TableCell>{row.class}</TableCell>
+        <TableCell>{row.section}</TableCell>
+        <TableCell align="center">{row.rollNumber}</TableCell>
+        <TableCell align="left">
           <IconButton onClick={handleOpenPopover}>
             <Iconify icon="eva:more-vertical-fill" />
           </IconButton>
@@ -103,11 +122,14 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
           }}
         >
           <MenuItem onClick={handleClosePopover}>
+            <Iconify icon="solar:eye-bold" />
+            View
+          </MenuItem>
+          <MenuItem onClick={handleOpenEditModal}>
             <Iconify icon="solar:pen-bold" />
             Edit
           </MenuItem>
-
-          <MenuItem onClick={handleClosePopover} sx={{ color: 'error.main' }}>
+          <MenuItem onClick={() => deleteStudent(row.id)} sx={{ color: 'error.main' }}>
             <Iconify icon="solar:trash-bin-trash-bold" />
             Delete
           </MenuItem>

@@ -13,7 +13,6 @@ export type LayoutSectionProps = {
   sx?: SxProps<Theme>;
   cssVars?: CSSObject;
   children?: React.ReactNode;
-  footerSection?: React.ReactNode;
   headerSection?: React.ReactNode;
   sidebarSection?: React.ReactNode;
 };
@@ -22,7 +21,6 @@ export function LayoutSection({
   sx,
   cssVars,
   children,
-  footerSection,
   headerSection,
   sidebarSection,
 }: LayoutSectionProps) {
@@ -53,7 +51,6 @@ export function LayoutSection({
         >
           {headerSection}
           {children}
-          {footerSection}
         </Box>
       </Box>
     </>
